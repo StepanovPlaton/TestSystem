@@ -1,0 +1,11 @@
+MacroName: Название макроса 2
+Description: Описание макроса 2
+Actions:
+  - Description: Описание первого шага
+    Action: Selenium.Click
+    Locator: { xpath: "//span[.='Одобрить']" }
+    $optional: true
+
+  - Description: Описание второго шага
+    #Action: Selenium.Click
+    Locator: { xpath: "//span[contains(., 'Подтвердить')]" }

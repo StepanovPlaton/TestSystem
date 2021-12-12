@@ -1,0 +1,7 @@
+Paths:
+  TestsFolder: "../Tests/tests"
+  MacroFolder: "../Tests/macro"
+  DataFolder: "../Tests/data"
+
+Logger:
+  LogLevel: "Debug"   #["Debug", "Info", "Warning", "Error", "Broken"]

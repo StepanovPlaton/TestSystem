@@ -1,0 +1,23 @@
+TestName: Первый тест
+SerialNumber: 0001.1.1
+Description: Описание первого теста
+Tags: [Front, SimpleTag] 
+Segments:
+  - Segment: Первый логический сегмент
+    Description: Описание первого логического сегмента
+    Actions:
+      #- Description: Описание первого шага
+      #  Macro: Macros.FirstMacro
+      #  In:
+      #    Url: $data("Urls").TestingWebServerUrl
+      #  $Screenshot: true
+
+      - Description: Описание второго шага
+        Action: Selenium.Click
+        Locator: { xpath: "//span[.='Одобрить']" }
+        $optional: true
+
+      - Description: Описание трерьего шага
+        Action: Selenium.Click
+        Locator: { xpath: "//span[contains(., 'Подтвердить')]" }
+
