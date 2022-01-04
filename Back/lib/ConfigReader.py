@@ -1,8 +1,9 @@
-from .YAMLReader import *
 from pathlib import Path
 
+from lib.YAMLReader import *
+
 class ConfigClass():
-    def __init__(self, PathToConfig="..\config.yaml"): 
+    def __init__(self, YAMLReader: YAMLReaderClass, PathToConfig: str ="..\\config.yaml") -> None: 
         try:
             self.Config = YAMLReader.ReadYamlFile(PathToConfig)
         except Exception:

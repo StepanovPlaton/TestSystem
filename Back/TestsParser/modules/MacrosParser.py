@@ -1,43 +1,77 @@
-from pathlib import Path as Path_
 import os
-from .StepParser import *
+from pathlib import Path as Path_
+
+# --- --- ---
+from lib.DictionaryFormater import *
+from lib.YAMLReader import *
+from lib.ConfigReader import *
+from lib.Logger import *
+from modules.DataParser import *
+from modules.StepParser import *
+# --- --- ---
+
+class MacroClass:
+    def __init__(self):
+        self.Name: str
+        self.Description: str
+        self.Steps: list[StepClass | MacroClass]
+
+    def __str__(self) -> str:
+        return f"Макрос \"{self.Name}\" - {len(self.Steps)} действий(я)"
+
+    def __repr__(self) -> str:
+        return f"<{self.__str__()}>"
+
+    class ActionsBlockNotFound(Exception): pass
+
+
 class MacrosParserClass:
-    def __init__(self, Config, Logger, YAMLReader, DataParser):
-        self.Config = Config.Config
+    class MacroFolderNotFound(Exception): pass
+    class NestedMacrosCycle(Exception): pass
+    class MacroNotFound(Exception): pass
+
+    def __init__(self, Config: dict[str, Any], Logger: LoggerClass, YAMLReader: YAMLReaderClass):
+        self.Config = Config
         self.Logger = Logger
         self.YAMLReader = YAMLReader
-        self.DataParser = DataParser
-        self.StepParser = StepParserClass(Logger)
+        self.StepParser = StepParserClass(Logger, YAMLReader)
 
         try: self.RelativePathToMacrosFolder = self.Config["Paths"]["MacroFolder"]
         except Exception: 
-            self.Log("Ошибка загрузки системы парсинга макросов тестирования! Не установлен путь до папки с макросами в config.yaml", "Broken")
-            raise
+            self.Logger.Log("Ошибка загрузки системы парсинга макросов тестирования! Не установлен путь до папки с макросами в config.yaml", "Broken")
+            raise MacrosParserClass.MacroFolderNotFound()
 
         self.PathToMacrosFolder = self.Config["ParserRootPath"] / self.RelativePathToMacrosFolder
-        self.Macros = self.ParsMacros(self.PathToMacrosFolder)
-        print(self.Macros)
+        self.Macros = self.ParsMacros(self.PathToMacrosFolder, self.PathToMacrosFolder)
 
-    def ParsMacros(self, RootPath, FullAccumulatedName=""):
-        Macros = {}
-        Elements = os.listdir(RootPath)
+        self.Logger.Indent()
+        self.Logger.Log(f"Полученное древо макросов:{DictToTree(self.Macros)}", "Info")
+        self.Logger.Detach()
+
+    def ParsMacros(self, Path: str, RootPath: str, FullAccumulatedName: str ="") -> dict[str, Any]:
+        Macros: dict[str, Any] = {}
+        Elements = os.listdir(Path)
         for Element in Elements:
-            ElementPath = os.path.join(RootPath, Element)
+            ElementPath = os.path.join(Path, Element)
             if(os.path.isfile(ElementPath)): 
                 # is File
-                ParsedMacro = self.ParsMacro(Element, ElementPath, RootPath, FullAccumulatedName+f"{Element}")
-                if(not (ParsedMacro is None)): Macros[Element] = ParsedMacro
+                try: ParsedMacro = self.ParsMacro(Element, ElementPath, RootPath, 
+                                                    FullAccumulatedName+f"{Element.replace('.yaml', '')}", [])
+                except Exception: pass
+                else: Macros[Element] = ParsedMacro
             elif(os.path.isdir(ElementPath)):
                 # is Folder
-                Macros[Element] = self.ParsMacros(ElementPath, FullAccumulatedName+f"{Element}.")
+                Macros[Element] = self.ParsMacros(ElementPath, RootPath, FullAccumulatedName+f"{Element}.")
+                self.Logger.Indent()
         return Macros
 
-    def ParsMacro(self, Element, Path, RootPath, FullAccumulatedName, NestedMacros=[]):
-        Macro = MacroClass()
+    def ParsMacro(self, Element: str, Path: str, RootPath: str, FullAccumulatedName: str, NestedMacros: list[str] =[]) -> MacroClass:
+        Macro: MacroClass = MacroClass()
         try:
             YamlMacro = self.YAMLReader.ReadYamlFile(Path)
         except Exception:
-            self.Logger.Log(f"Макрос {Element} был пропущен, так как повреждён или содержит неправильный синтаксис", "Error")
+            self.Logger.Log(f"Макрос {FullAccumulatedName+'.yaml'} был пропущен, так как повреждён или содержит неправильный синтаксис", "Error")
+            raise YAMLReaderClass.YamlIncorrectSyntax()
         else:
             try: Macro.Name = YamlMacro["MacroName"]
             except Exception: pass
@@ -46,33 +80,49 @@ class MacrosParserClass:
             except Exception: pass
 
             try: Actions = YamlMacro["Actions"]
-            except Exception: self.Logger.Log(f"Макрос {Element} был пропущен, так как не содержит блок Actions", "Error")
+            except Exception: 
+                self.Logger.Log(f"Макрос {FullAccumulatedName+'.yaml'} был пропущен, так как не содержит блок Actions", "Error")
+                raise MacroClass.ActionsBlockNotFound()
             else: 
-                FileCorrect = True
+                Macro.Steps = []
                 for i, Step in enumerate(Actions):
-                    try: ParsedStep = self.StepParser.ParseStep((Step), f"{Element} шаг {i+1}")
+                    try: ParsedStep = self.StepParser.ParseStep((Step), f"{Element} шаг #{i+1}")
                     except Exception: 
-                        self.Logger.Log(f"Макрос {Element} был пропущен, так как в одном из шагов обнаружена ошибка", "Error")
-                        FileCorrect = False
-                        break
+                        self.Logger.Log(f"Макрос {FullAccumulatedName+'.yaml'} был пропущен, так как в одном из шагов обнаружена ошибка", "Error")
+                        raise StepParserClass.StepParsingError()
                     else:
                         if(ParsedStep.StepType == "Action"): Macro.Steps.append(ParsedStep)
                         else:
                             # Вложенный макрос
-                            PathToNestedMacro = RootPath.joinpath(self.GetPathtoMacroFromName(ParsedStep.Macro, RootPath)[1:])
                             NestedMacros.append(FullAccumulatedName)
-                            NestedMacro = self.ParsMacro(
-                                f"{Element}/Шаг #{i+1}/{ParsedStep.Macro}", 
-                                PathToNestedMacro, 
-                                RootPath,
-                                NestedMacros)
-                            print(NestedMacro)
-                if(FileCorrect): return Macro
-                else: return None
+                            if(ParsedStep.Macro in NestedMacros):
+                                if(FullAccumulatedName == ParsedStep.Macro):
+                                    self.Logger.Log(f"Макрос {FullAccumulatedName+'.yaml'} был пропущен, так как содержит цикличный вызов {ParsedStep.Macro} на шаге #{i+1}", "Error")
+                                raise MacrosParserClass.NestedMacrosCycle()
 
-    def GetPathtoMacroFromName(self, MacroName, RootPath, Path=""):
+                            try:
+                                PathToNestedMacro: str = \
+                                    str(Path_(RootPath).joinpath(self.GetPathtoMacroFromName(ParsedStep.Macro, RootPath)[1:]))
+                            except MacrosParserClass.MacroNotFound: 
+                                self.Logger.Log(f"Макрос {FullAccumulatedName+'.yaml'} был пропущен, так как содержит вызов макроса, который не удалось найти в системе - {ParsedStep.Macro} ", "Error")
+                                raise MacrosParserClass.MacroNotFound()
+
+                            try: NestedMacro = self.ParsMacro(
+                                    f"{Element}/Шаг #{i+1}/{ParsedStep.Macro}", 
+                                    PathToNestedMacro, 
+                                    RootPath,
+                                    ParsedStep.Macro,
+                                    NestedMacros)
+                            except MacrosParserClass.NestedMacrosCycle:
+                                if(Element.find("Шаг") == -1):
+                                    self.Logger.Log(f"Макрос {FullAccumulatedName+'.yaml'} был пропущен, так как содержит цикличный вызов {ParsedStep.Macro} на шаге #{i+1}", "Error")
+                                raise
+                            else:
+                                Macro.Steps.append(NestedMacro)
+                return Macro
+
+    def GetPathtoMacroFromName(self, MacroName: str, RootPath: str, Path: str="") -> str:
         SearchedElement = MacroName.split(".")[0]
-        #MacroName = ".".join(MacroName.split(".")[1:])
         Elements = os.listdir(RootPath)
         for Element in Elements:
             ElementPath = os.path.join(RootPath, Element)
@@ -82,17 +132,21 @@ class MacrosParserClass:
                     return f"{Path}/{Element}"
             elif(os.path.isdir(ElementPath)):
                 # is Folder
-                return self.GetPathtoMacroFromName(".".join(MacroName.split(".")[1:]), ElementPath, f"{Path}/{Element}")
-        return None
+                try:
+                    return self.GetPathtoMacroFromName(".".join(MacroName.split(".")[1:]), ElementPath, f"{Path}/{Element}")
+                except MacrosParserClass.MacroNotFound: pass
+        raise MacrosParserClass.MacroNotFound()
 
-class MacroClass:
-    def __init__(self):
-        self.Name = ""
-        self.Description = ""
-        self.Steps = []
+    def GetMacroByFullName(self, FullName: str, Macros: dict[str, Any] | None =None) -> MacroClass:
+        if(Macros is None): return self.GetMacroByFullName(FullName, self.Macros)
 
-    def __str__(self):
-        return f"Макрос \"{self.Name}\" - {len(self.Steps)} действий(я)"
+        if(FullName.find(".") != -1):
+            BranchName = FullName.split(".")[0]
+            try: Branch = Macros[BranchName]
+            except Exception: raise MacrosParserClass.MacroNotFound()
+            return self.GetMacroByFullName(".".join(FullName.split(".")[1:]), Branch)
+        else: 
+            try: Macro = Macros[FullName]
+            except Exception: raise MacrosParserClass.MacroNotFound()
+            return Macro
 
-    def __repr__(self):
-        return f"<Макрос \"{self.Name}\" - {len(self.Steps)} действий(я)>"

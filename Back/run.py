@@ -1,18 +1,27 @@
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parents[0]))
+sys.path.append(str(Path(__file__).parents[0] / Path("./TestsRunner/.")))
+sys.path.append(str(Path(__file__).parents[0] / Path("./TestsParser/.")))
+# --- --- ---
 from flask import Flask
-
-from TestsParser.TestsParser import TestsParserClass
-
+# --- --- ---
 from lib.ConfigReader import *
 from lib.Logger import *
-from TestsParser import *
+from lib.YAMLReader import *
+from TestsParser.TestsParser import *
+from TestsRunner.TestsRunner import *
+# --- --- ---
 
-Config = ConfigClass()
+YAMLReader = YAMLReaderClass()
+Config = ConfigClass(YAMLReader)
 Logger = LoggerClass(Config)
 
 TestsParser = TestsParserClass(Config, Logger, YAMLReader)
 
+
 app = Flask(__name__)
-@app.route('/')
+@app.route('/') #type: ignore
 def hello_world():
     return 'Hello World!'
 #app.run()

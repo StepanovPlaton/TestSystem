@@ -1,3 +1,10 @@
+from typing import Any
+
+# --- --- ---
+from lib.Logger import *
+from lib.YAMLReader import *
+# --- --- ---
+
 class StepClass:
     def __init__(self):
         self.StepType = ""
@@ -18,15 +25,20 @@ class StepClass:
     def __repr__(self):
         return f"(Действие {self.Action})"
 
-class StepParserClass:
-    def __init__(self, Logger):
-        self.Logger = Logger
+    def isMacro(self): return not (self.Macro == "")
 
-    def ParseStep(self, YamlStep, Location=""):
+class StepParserClass:
+    class StepParsingError(Exception): pass
+
+    def __init__(self, Logger: LoggerClass, YamlReader: YAMLReaderClass):
+        self.Logger = Logger
+        self.YamlReader = YamlReader
+
+    def ParseStep(self, YamlStep: dict[str, Any], Location: str=""):
         Step = StepClass()
         
-        ActionFound = True
-        MacroFound = True
+        ActionFound: bool = True
+        MacroFound: bool = True
 
         try: Step.Action = YamlStep["Action"]
         except Exception: ActionFound = False
@@ -44,9 +56,7 @@ class StepParserClass:
             if(MacroFound): Step.StepType = "Macro"
 
 
-
-        try: Step.Descripton = YamlStep["Description"]
-        except Exception: pass
+        Step.Descripton = self.YamlReader.TryGetNesting(YamlStep, "Description")
 
         try: _ = YamlStep["Locator"]
         except Exception: pass

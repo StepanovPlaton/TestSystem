@@ -4,4 +4,4 @@ Paths:
   DataFolder: "../Tests/data"
 
 Logger:
-  LogLevel: "Debug"   #["Debug", "Info", "Warning", "Error", "Broken"]
+  LogLevel: "All"   #["All", "Debug", "Info", "Warning", "Error", "Broken"]

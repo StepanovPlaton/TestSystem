@@ -1,0 +1,3 @@
+class StepResult:
+    Status: bool
+    

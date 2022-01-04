@@ -1,2 +1,4 @@
 data1block:
-  - data1SubBlock: "data1" "dataError"  
+  - data1SubBlock: "data1"
+  - data1SubBlock2:
+      - data1SubSubBlock: "SubData1"

@@ -1,12 +1,6 @@
-MacroName: Название макроса 2
-Description: Описание макроса 2
+MacroName: Название макроса 3
+Description: Описание макроса 3
 Actions:
-  - Description: Описание первого шага
-    Macro: macro3
-    In:
-      Url: $data("Urls").TestingWebServerUrl
-    $Screenshot: true
-
   - Description: Описание первого шага
     Action: Selenium.Click
     Locator: { xpath: "//span[.='Одобрить']" }
