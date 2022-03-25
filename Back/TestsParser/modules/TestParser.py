@@ -12,7 +12,7 @@ class TestClass:
     class Segment:
         Name: str
         Description: str
-        Actions: list[StepClass | MacroClass]
+        Actions: list[StepClass]
 
         #def __init__(self, Actions: list[StepClass | MacroClass]):
         #    self.Actions = Actions
@@ -88,8 +88,8 @@ class TestParserClass:
         return Test
 
 
-    def ParsSegmentActions(self, Actions: list[dict[str, Any]], Element: str) -> list[StepClass | MacroClass]:
-        Segment: list[StepClass | MacroClass] = []
+    def ParsSegmentActions(self, Actions: list[dict[str, Any]], Element: str) -> list[StepClass]:
+        Segment: list[StepClass] = []
         for Action in Actions:
             Step = self.StepParser.ParseStep(Action)
             if(Step.isMacro()):

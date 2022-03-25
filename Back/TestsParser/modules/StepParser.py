@@ -25,7 +25,8 @@ class StepClass:
     def __repr__(self):
         return f"(Действие {self.Action})"
 
-    def isMacro(self): return not (self.Macro == "")
+    def isMacro(self) -> bool: 
+        return not (self.Macro == "")
 
 class StepParserClass:
     class StepParsingError(Exception): pass

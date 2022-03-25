@@ -6,11 +6,11 @@ Segments:
   - Segment: Первый логический сегмент
     Description: Описание первого логического сегмента
     Actions:
-      #- Description: Описание первого шага
-      #  Macro: Macros.FirstMacro
-      #  In:
-      #    Url: $data("Urls").TestingWebServerUrl
-      #  $Screenshot: true
+      - Description: Описание первого шага
+        Macro: Macros.FirstMacro
+        In:
+          Url: $data("Urls").TestingWebServerUrl
+        $Screenshot: true
 
       - Description: Описание второго шага
         Action: Selenium.Click

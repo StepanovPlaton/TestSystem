@@ -1,5 +1,4 @@
 import os
-from Back.TestsParser.modules.TestParser import TestClass
 
 # --- --- ---
 from lib.YAMLReader import *
@@ -10,6 +9,7 @@ from modules.MacrosParser import MacrosParserClass
 from modules.TestParser import MacrosParserClass
 from modules.TestParser import TestParserClass
 from lib.DictionaryFormater import *
+from TestsParser.modules.TestParser import *
 # --- --- ---
 
 class TestsParserClass():

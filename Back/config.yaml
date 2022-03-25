@@ -5,3 +5,6 @@ Paths:
 
 Logger:
   LogLevel: "All"   #["All", "Debug", "Info", "Warning", "Error", "Broken"]
+
+Selenium:
+  PathToChromeDriver: "D:/Programs/chromedriver.exe"

@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).parents[0]))
 sys.path.append(str(Path(__file__).parents[0] / Path("./TestsRunner/.")))
 sys.path.append(str(Path(__file__).parents[0] / Path("./TestsParser/.")))
@@ -18,7 +19,8 @@ Config = ConfigClass(YAMLReader)
 Logger = LoggerClass(Config)
 
 TestsParser = TestsParserClass(Config, Logger, YAMLReader)
-
+TestsRunner = TestsRunnerClass(Config, Logger, TestsParser)
+print(TestsRunner.RunTest("test")[0][0].ErrorDescription)
 
 app = Flask(__name__)
 @app.route('/') #type: ignore
